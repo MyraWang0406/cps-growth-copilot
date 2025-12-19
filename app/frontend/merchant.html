@@ -1,0 +1,879 @@
+<!-- app/frontend/merchant.html -->
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>经营分析 Copilot（预览）</title>
+    <style>
+      :root{
+        --bg1:#0b3bbd;
+        --bg2:#1d7dff;
+        --card:#ffffff;
+        --text:#0f172a;
+        --muted:#64748b;
+        --border:rgba(15,23,42,.08);
+        --shadow:0 10px 30px rgba(2,6,23,.10);
+        --radius:20px;
+      }
+      *{box-sizing:border-box}
+      body{
+        margin:0;
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", Arial, "Apple Color Emoji","Segoe UI Emoji";
+        color:var(--text);
+        background:
+          radial-gradient(1200px 600px at 20% -10%, rgba(29,125,255,.25), transparent 60%),
+          radial-gradient(1000px 600px at 80% 0%, rgba(11,59,189,.18), transparent 55%),
+          #f6f8ff;
+      }
+      .container{width:min(1180px, calc(100vw - 32px)); margin:28px auto 90px;}
+      a{color:inherit}
+
+      /* Header */
+      .hero{
+        background: linear-gradient(135deg, rgba(11,59,189,.95), rgba(29,125,255,.92));
+        color:#fff;
+        border-radius:28px;
+        padding:22px 22px 16px;
+        box-shadow: var(--shadow);
+        position:relative;
+        overflow:hidden;
+      }
+      .hero::after{
+        content:"";
+        position:absolute;
+        inset:-60px -60px auto auto;
+        width:360px;height:360px;
+        background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.22), transparent 60%);
+        transform: rotate(18deg);
+        pointer-events:none;
+      }
+      .hero-top{display:flex; align-items:flex-start; justify-content:space-between; gap:14px; position:relative; z-index:1;}
+      .title-wrap h1{margin:0; font-size:40px; letter-spacing:.5px; line-height:1.15; display:flex; gap:10px; align-items:baseline;}
+      .badge{font-size:14px; padding:4px 10px; border-radius:999px; background: rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.22);}
+      .subtitle{margin-top:6px; color: rgba(255,255,255,.82); font-size:14px;}
+      .hero-actions{display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end;}
+      .btn{
+        border:1px solid rgba(255,255,255,.28);
+        background: rgba(255,255,255,.14);
+        color:#fff;
+        padding:10px 14px;
+        border-radius:999px;
+        font-size:14px;
+        cursor:pointer;
+        transition: transform .08s ease, background .15s ease;
+        white-space:nowrap;
+      }
+      .btn:hover{background: rgba(255,255,255,.20)}
+      .btn:active{transform: translateY(1px)}
+      .btn.primary{background: rgba(255,255,255,.92); color:#0b3bbd; border-color: rgba(255,255,255,.92);}
+
+      .pill{
+        display:inline-flex; align-items:center; gap:8px;
+        padding:10px 14px; border-radius:999px;
+        background: rgba(255,255,255,.14);
+        border:1px solid rgba(255,255,255,.22);
+        color: rgba(255,255,255,.92);
+        font-size:13px; white-space:nowrap;
+      }
+      .pill.note-pill{cursor:default; background: rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.18);}
+      .dot{width:10px;height:10px;border-radius:999px;background:#22c55e; box-shadow: 0 0 0 4px rgba(34,197,94,.18);}
+      .dot.bad{background:#f97316; box-shadow: 0 0 0 4px rgba(249,115,22,.18);}
+      .tabs{margin-top:14px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; position:relative; z-index:1;}
+      .tab{border:1px solid rgba(255,255,255,.25); background: rgba(255,255,255,.12); color:#fff; padding:10px 14px; border-radius:999px; cursor:pointer; font-size:14px;}
+      .tab.active{background: rgba(255,255,255,.92); color:#0b3bbd; border-color: rgba(255,255,255,.92);}
+
+      /* Cards / grid */
+      .grid{margin-top:18px; display:grid; grid-template-columns: repeat(12, 1fr); gap:14px;}
+      .card{
+        grid-column: span 12;
+        background: var(--card);
+        border:1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: 0 8px 22px rgba(2,6,23,.06);
+        overflow:hidden;
+        position:relative;
+      }
+      .card-head{
+        padding:16px 18px;
+        display:flex;
+        justify-content:space-between;
+        align-items:flex-start;
+        gap:12px;
+      }
+      .card-title{font-size:18px; font-weight:800; margin:0;}
+      .card-sub{margin-top:6px; font-size:13px; color:var(--muted);}
+      .card-body{padding:0 18px 18px}
+      .actions{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+      .small-btn{padding:9px 12px; border-radius:999px; border:1px solid rgba(11,59,189,.18); background: rgba(29,125,255,.10); color:#0b3bbd; cursor:pointer; font-size:13px;}
+      .small-btn:hover{background: rgba(29,125,255,.14)}
+
+      /* ⓘ：只显示图标，hover 出气泡（右上角） */
+      .note{
+        position:relative;
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        width:28px;height:28px;
+        border-radius:999px;
+        border:1px solid rgba(15,23,42,.10);
+        background: rgba(255,255,255,.75);
+        color: rgba(15,23,42,.55);
+        cursor:default;
+        user-select:none;
+        flex:0 0 auto;
+      }
+      .note span{font-size:14px; line-height:1}
+      .note .bubble{
+        display:none;
+        position:absolute;
+        right:0;
+        top:36px;
+        width:min(360px, calc(100vw - 60px));
+        padding:10px 12px;
+        border-radius:14px;
+        background:#0b1220;
+        color: rgba(255,255,255,.92);
+        font-size:12px;
+        line-height:1.45;
+        box-shadow: 0 16px 40px rgba(2,6,23,.25);
+        border:1px solid rgba(255,255,255,.08);
+        z-index:50;
+        white-space:normal;
+      }
+      .note:hover .bubble{display:block}
+      .note .bubble strong{color:#fff}
+      .note.abs{position:absolute; top:12px; right:12px;}
+
+      /* KPI */
+      .kpis{display:grid; grid-template-columns: repeat(12, 1fr); gap:14px; margin-top:14px;}
+      .kpi{grid-column: span 12; padding:18px}
+      .kpi .label{font-size:14px;color:var(--muted); font-weight:700}
+      .kpi .value{margin-top:8px;font-size:44px;font-weight:900;letter-spacing:.2px}
+      .kpi-foot{margin-top:10px; font-size:12px; color: var(--muted); display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+      .chip{display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px; border:1px solid rgba(15,23,42,.10); background: rgba(2,6,23,.02); color: rgba(15,23,42,.70);}
+
+      /* Tables */
+      table{width:100%; border-collapse:collapse}
+      thead th{ text-align:left; font-size:13px; color: var(--muted); padding:12px 10px; border-bottom:1px solid rgba(15,23,42,.08); white-space:nowrap;}
+      tbody td{ padding:12px 10px; border-bottom:1px solid rgba(15,23,42,.06); font-size:14px;}
+      tbody tr:hover{background: rgba(2,6,23,.02)}
+      .right{text-align:right}
+      .mono{font-variant-numeric: tabular-nums; font-feature-settings:"tnum"; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
+      .rate{font-weight:800; color:#0b3bbd; white-space:nowrap;}
+      .muted{color:var(--muted)}
+      .empty{padding:14px 0; color:var(--muted); font-size:14px;}
+
+      /* Funnel mini chart */
+      .funnel{
+        display:grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap:10px;
+        margin-top:12px;
+      }
+      .fcol{
+        border:1px solid rgba(15,23,42,.08);
+        border-radius:14px;
+        padding:10px 10px;
+        background: rgba(2,6,23,.015);
+      }
+      .fcol .name{font-weight:800; font-size:13px;}
+      .fcol .num{margin-top:6px; font-size:20px; font-weight:900;}
+      .fcol .sub{margin-top:6px; font-size:12px; color:var(--muted);}
+
+      /* Lists (avoid big paragraphs) */
+      .mini-list{margin:0; padding-left:16px; color:#0b3bbd; line-height:1.55;}
+      .mini-list li{margin:6px 0;}
+      .mini-list .muted{color:var(--muted)}
+
+      /* Sections */
+      .col-4{grid-column: span 12}
+      .col-6{grid-column: span 12}
+      .col-8{grid-column: span 12}
+      .col-12{grid-column: span 12}
+
+      /* Footer: 右下角固定“作者信息/备注” —— 不删 */
+      footer{
+        position:fixed;
+        right:16px;
+        bottom:14px;
+        left:auto;
+        pointer-events:none;
+        z-index:100;
+      }
+      .footer-pill{
+        pointer-events:auto;
+        background: rgba(2,6,23,.84);
+        color: rgba(255,255,255,.90);
+        border:1px solid rgba(255,255,255,.10);
+        border-radius:16px;
+        padding:10px 12px;
+        font-size:13px;
+        line-height:1.35;
+        box-shadow: 0 16px 45px rgba(2,6,23,.35);
+        max-width:min(520px, calc(100vw - 32px));
+        white-space:normal;
+      }
+
+      /* Responsive */
+      @media (min-width: 860px){
+        .kpi{grid-column: span 3}
+        .col-6{grid-column: span 6}
+        .col-8{grid-column: span 8}
+        .col-4{grid-column: span 4}
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <div class="hero">
+        <div class="hero-top">
+          <div class="title-wrap">
+            <h1>经营分析 Copilot <span class="badge">预览</span></h1>
+            <div class="subtitle">支持：用户生命周期 / 用户旅程漏斗 / 小B选品（达人/淘客）</div>
+          </div>
+          <div class="hero-actions">
+            <button class="btn" id="btnImport">导入数据</button>
+            <button class="btn primary" id="btnRefresh">刷新数据</button>
+            <button class="btn" id="btnDemo">演示数据</button>
+
+            <span class="pill" title="后端 API 状态">
+              <span class="dot" id="connDot"></span><span id="connText">未检测</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="tabs">
+          <button class="tab active" data-view="merchant">商家视角</button>
+          <button class="tab" data-view="kb">小B（达人/淘客）</button>
+          <span style="flex:1"></span>
+
+          <span class="pill note-pill" id="sourcePill" title="数据来源说明">数据源：—</span>
+
+          <span class="pill" title="strict=0/1（宽松/严格）">
+            口径：
+            <button class="btn" id="btnToggleStrict" style="padding:8px 12px; font-size:13px;">宽松</button>
+          </span>
+        </div>
+      </div>
+
+      <!-- KPI -->
+      <div class="kpis">
+        <div class="card kpi">
+          <div class="note abs" aria-label="数据说明">
+            <span>ⓘ</span>
+            <div class="bubble"><strong>数据说明</strong><br/>来源：天池开源行为日志（采样/脱敏）。</div>
+          </div>
+          <div class="label">行为表行数</div>
+          <div class="value mono" id="kpiRows">—</div>
+          <div class="kpi-foot">
+            <span class="chip" id="kpiRowsSrc">数据源：—</span>
+          </div>
+        </div>
+
+        <div class="card kpi">
+          <div class="note abs" aria-label="数据说明">
+            <span>ⓘ</span>
+            <div class="bubble"><strong>数据说明</strong><br/>按 user_id 去重统计。</div>
+          </div>
+          <div class="label">去重用户</div>
+          <div class="value mono" id="kpiUsers">—</div>
+          <div class="kpi-foot">
+            <span class="chip" id="kpiUsersSrc">数据源：—</span>
+          </div>
+        </div>
+
+        <div class="card kpi">
+          <div class="note abs" aria-label="数据说明">
+            <span>ⓘ</span>
+            <div class="bubble"><strong>数据说明</strong><br/>按 item_id 去重统计。</div>
+          </div>
+          <div class="label">去重商品</div>
+          <div class="value mono" id="kpiItems">—</div>
+          <div class="kpi-foot">
+            <span class="chip" id="kpiItemsSrc">数据源：—</span>
+          </div>
+        </div>
+
+        <div class="card kpi">
+          <div class="note abs" aria-label="数据说明">
+            <span>ⓘ</span>
+            <div class="bubble"><strong>数据说明</strong><br/>由行为日志衍生（item_funnel_features）。建议用 strict=1 看真漏斗。</div>
+          </div>
+          <div class="label">选品特征行数</div>
+          <div class="value mono" id="kpiFeatRows">—</div>
+          <div class="kpi-foot">
+            <span class="chip" id="kpiFeatSrc">数据源：本地构建</span>
+            <span class="chip" id="kpiStrictHint">strict=0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Merchant View -->
+      <div class="grid" id="viewMerchant">
+        <div class="card col-6" id="cardLifecycle">
+          <div class="card-head">
+            <div>
+              <div class="card-title">用户生命周期（分群 & 留存）</div>
+              <div class="card-sub" id="lifecycleSub">—</div>
+            </div>
+            <div class="actions">
+              <button class="small-btn" id="btnCopyLifecycle">复制</button>
+              <div class="note" aria-label="生命周期说明">
+                <span>ⓘ</span>
+                <div class="bubble" id="lifeBubble">
+                  <strong>生命周期划分原则</strong><br/>
+                  以数据中的最近一天作为 anchor_day，按“最近活跃 + 近7天活跃频次”划分：新客/活跃/回访/沉睡。
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card-body">
+            <table>
+              <thead>
+                <tr>
+                  <th>分群</th>
+                  <th class="right">用户数</th>
+                  <th class="right">占比</th>
+                  <th class="right">近30天活跃天数（均值）</th>
+                </tr>
+              </thead>
+              <tbody id="lifeBody"></tbody>
+            </table>
+            <div class="empty" id="lifeEmpty" style="display:none;">暂无生命周期数据</div>
+          </div>
+        </div>
+
+        <div class="card col-6" id="cardJourney">
+          <div class="card-head">
+            <div>
+              <div class="card-title">用户旅程（漏斗）</div>
+              <div class="card-sub">展示的是“全量行为计数示例”；真经营漏斗看 strict=1</div>
+            </div>
+            <div class="actions">
+              <button class="small-btn" id="btnCopyJourney">复制</button>
+              <div class="note" aria-label="漏斗说明">
+                <span>ⓘ</span>
+                <div class="bubble">
+                  <strong>说明</strong><br/>
+                  strict=0：只要求行为发生在 PV 之后。<br/>
+                  strict=1：要求 pv_ts &lt; fav_ts &lt; cart_ts &lt; buy_ts（更严、更真）。
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="funnel" id="journeyFunnel"></div>
+          </div>
+        </div>
+
+        <div class="card col-12" id="cardBizDiagnosis">
+          <div class="card-head">
+            <div>
+              <div class="card-title">经营诊断（优先级动作清单）</div>
+              <div class="card-sub">先定位“掉在哪一段”，再给动作（不堆长文）</div>
+            </div>
+            <div class="actions">
+              <button class="small-btn" id="btnCopyDiagnosis">复制</button>
+              <div class="note" aria-label="诊断说明">
+                <span>ⓘ</span>
+                <div class="bubble">
+                  <strong>说明</strong><br/>
+                  这是前端启发式诊断（可用就用）。一旦后端返回 strict 漏斗分段率，可替换为更准规则。
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card-body">
+            <ul class="mini-list" id="bizDiagnosis"></ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- KB View -->
+      <div class="grid" id="viewKB" style="display:none;">
+        <div class="card col-8">
+          <div class="card-head">
+            <div>
+              <div class="card-title">小B · 选品（高转化 Top）</div>
+              <div class="card-sub">建议 min_pv 过滤低样本；严格口径看 strict=1</div>
+            </div>
+            <div class="actions">
+              <button class="small-btn" id="btnCopyTop">复制</button>
+              <div class="note" aria-label="Top说明">
+                <span>ⓘ</span>
+                <div class="bubble">
+                  <strong>说明</strong><br/>
+                  选品来自 item_funnel_features（用户去重 + 先后约束）。strict=1 更真，但更少。
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card-body">
+            <table>
+              <thead>
+                <tr>
+                  <th>商品ID</th>
+                  <th class="right">PV</th>
+                  <th class="right">Fav</th>
+                  <th class="right">Cart</th>
+                  <th class="right">Buy</th>
+                  <th class="right">PV→Buy</th>
+                </tr>
+              </thead>
+              <tbody id="topBody"></tbody>
+            </table>
+            <div class="empty" id="topEmpty" style="display:none;">暂无 Top 数据</div>
+          </div>
+        </div>
+
+        <div class="card col-4">
+          <div class="card-head">
+            <div>
+              <div class="card-title">机会点（高PV低转化）</div>
+              <div class="card-sub">先修漏斗再扩量（strict=1 更像经营漏斗）</div>
+            </div>
+            <div class="actions">
+              <button class="small-btn" id="btnCopyOpp">复制</button>
+              <div class="note" aria-label="机会点说明">
+                <span>ⓘ</span>
+                <div class="bubble">
+                  <strong>说明</strong><br/>
+                  默认 min_pv≥50。strict=1 会更严：候选更少但更“可运营”。
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card-body">
+            <table>
+              <thead>
+                <tr>
+                  <th>商品ID</th>
+                  <th class="right">PV</th>
+                  <th class="right">Buy</th>
+                  <th class="right">PV→Buy</th>
+                </tr>
+              </thead>
+              <tbody id="oppBody"></tbody>
+            </table>
+            <div class="empty" id="oppEmpty" style="display:none;">暂无机会点数据</div>
+          </div>
+        </div>
+
+        <div class="card col-8" id="cardKBPlan">
+          <div class="card-head">
+            <div>
+              <div class="card-title">选品建议（动作，不堆长文）</div>
+              <div class="card-sub">主推放大 + 机会点修漏斗</div>
+            </div>
+            <div class="actions">
+              <button class="small-btn" id="btnCopyKBPlan">复制</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <ul class="mini-list" id="kbActionPlan"></ul>
+          </div>
+        </div>
+
+        <div class="card col-4" id="cardKBNext" style="grid-column: span 4;">
+          <div class="card-head">
+            <div>
+              <div class="card-title">下一步</div>
+              <div class="card-sub">用最短动作闭环：推 / 修 / 再推</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <ul class="mini-list" id="kbNext"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <div class="footer-pill">天池开源数据，仅供参考思路。联系作者：myrawzm0604@163.com 微信：15301052620</div>
+    </footer>
+
+    <script>
+      // ---- Safe DOM setters: 不让缺元素把整页 JS 直接打崩 ----
+      const byId = (id)=>document.getElementById(id);
+      const setText = (id, v)=>{ const el = byId(id); if(el) el.textContent = v; };
+      const setHTML = (id, v)=>{ const el = byId(id); if(el) el.innerHTML = v; };
+      const setList = (id, lines)=>{
+        const el = byId(id);
+        if(!el) return;
+        el.innerHTML = "";
+        (lines || []).forEach(t=>{
+          const li = document.createElement("li");
+          li.innerHTML = t;
+          el.appendChild(li);
+        });
+      };
+
+      const fmtInt = (n)=>{
+        const x = Number(n);
+        if (!Number.isFinite(x)) return "—";
+        return x.toLocaleString("zh-CN");
+      };
+      const fmtPct = (r)=>{
+        const x = Number(r);
+        if (!Number.isFinite(x)) return "—";
+        const clipped = Math.max(0, Math.min(1, x));
+        return (clipped*100).toFixed(1) + "%";
+      };
+      const safeArr = (v)=> Array.isArray(v) ? v : [];
+      const safeObj = (v)=> (v && typeof v === "object") ? v : {};
+
+      const state = {
+        items_limit: 20,
+        min_pv: 50,
+        strict: 0, // 0=宽松 1=严格
+      };
+
+      function copyText(text){
+        navigator.clipboard?.writeText(text).catch(()=>{});
+      }
+
+      function setConn(ok, msg){
+        const dot = byId("connDot");
+        if(dot){
+          dot.classList.toggle("bad", !ok);
+        }
+        setText("connText", msg);
+      }
+
+      async function fetchDashboard(){
+        const url = `/merchant/dashboard?items_limit=${state.items_limit}&min_pv=${state.min_pv}&strict=${state.strict}`;
+        try{
+          const res = await fetch(url, {cache:"no-store"});
+          if(!res.ok) throw new Error("HTTP " + res.status);
+          const data = await res.json();
+          renderAll(data);
+          setConn(true, "已连接");
+        }catch(e){
+          // 关键：接口挂了也不白屏
+          renderAll({});
+          setConn(false, "服务异常");
+          console.error("[dashboard fetch failed]", e);
+        }
+      }
+
+      function renderAll(data){
+        const ov = safeObj(data.overview);
+        const mt = safeObj(data.metrics);
+        const lc = safeObj(data.lifecycle);          // ✅ 不再取 .segments，避免结构歧义
+        const items = safeObj(data.items);
+        const top = safeObj(items.top);
+        const opp = safeObj(items.opportunity);
+        const advice = safeObj(data.advice);
+
+        setText("kpiRows", fmtInt(ov.user_behavior_rows));
+        setText("kpiUsers", fmtInt(ov.distinct_users));
+        setText("kpiItems", fmtInt(ov.distinct_items));
+        setText("kpiFeatRows", fmtInt(ov.item_funnel_features_rows));
+        setText("kpiStrictHint", `strict=${state.strict}`);
+
+        const sources = safeObj(ov.sources);
+        const s = [];
+        if (sources.tianchi) s.push("阿里天池");
+        if (sources.amazon) s.push("Amazon 开源（Beauty）");
+        setText("sourcePill", "数据源：" + (s.length ? s.join(" + ") : "—"));
+
+        setText("kpiRowsSrc", "数据源：" + (sources.tianchi ? "阿里天池" : "—"));
+        setText("kpiUsersSrc", "数据源：" + (sources.tianchi ? "阿里天池" : "—"));
+        setText("kpiItemsSrc", "数据源：" + (sources.tianchi ? "阿里天池" : "—"));
+
+        renderLifecycle(lc, mt);
+        renderJourneyFunnel(ov);
+        renderBizDiagnosis(lc, ov, advice);
+        renderTop(top);
+        renderOpp(opp);
+        renderKBPlan(top, opp);
+        renderKBNext(top, opp);
+      }
+
+      function renderLifecycle(lc, mt){
+        const segs = safeArr(lc?.segments?.segments || lc?.segments || []); // 兼容不同后端结构
+        const anchor = lc?.segments?.anchor_day || lc?.anchor_day;
+        const d1 = safeObj(mt.d1_retention);
+        const rep = safeObj(mt.repurchase_7d);
+
+        const sub = [
+          `anchor_day：${anchor || "—"}`,
+          `次日留存：${d1.rate != null ? fmtPct(d1.rate) : "—"}`,
+          `7日复购：${rep.rate != null ? fmtPct(rep.rate) : "—"}`
+        ].join(" · ");
+        setText("lifecycleSub", sub);
+
+        const body = byId("lifeBody");
+        const empty = byId("lifeEmpty");
+        if(!body || !empty) return;
+        body.innerHTML = "";
+
+        if(!segs.length){
+          empty.style.display = "";
+          return;
+        }
+        empty.style.display = "none";
+
+        segs.forEach(s=>{
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>
+              <div style="font-weight:800">${s.segment_zh || s.segment || "—"}</div>
+              <div class="muted" style="font-size:12px;margin-top:4px">${s.rule_zh || ""}</div>
+            </td>
+            <td class="right mono">${fmtInt(s.users)}</td>
+            <td class="right mono">${fmtPct(s.share)}</td>
+            <td class="right mono">${(Number(s.avg_actions)||0).toFixed(1)}</td>
+          `;
+          body.appendChild(tr);
+        });
+
+        const defs = safeObj(lc?.segments?.defs || lc?.defs);
+        const rules = safeObj(defs.rules);
+        const lines = [];
+        if (rules.new) lines.push(`• 新客：${rules.new}`);
+        if (rules.active) lines.push(`• 活跃：${rules.active}`);
+        if (rules.warm) lines.push(`• 回访：${rules.warm}`);
+        if (rules.dormant) lines.push(`• 沉睡：${rules.dormant}`);
+        if (lines.length){
+          setHTML("lifeBubble", `<strong>生命周期划分原则</strong><br/>${lines.join("<br/>")}`);
+        }
+
+        const btn = byId("btnCopyLifecycle");
+        if(btn){
+          btn.onclick = ()=> copyText(JSON.stringify({anchor_day: anchor, segments: segs}, null, 2));
+        }
+      }
+
+      function renderJourneyFunnel(ov){
+        const c = safeObj(ov.behavior_counts);
+        const pv = Number(c.pv||0), fav = Number(c.fav||0), cart = Number(c.cart||0), buy = Number(c.buy||0);
+
+        const el = byId("journeyFunnel");
+        if(!el) return;
+        el.innerHTML = "";
+
+        const steps = [
+          {name:"PV", n:pv, rate:null},
+          {name:"Fav", n:fav, rate: pv>0 ? fav/pv : null},
+          {name:"Cart", n:cart, rate: fav>0 ? cart/fav : null},
+          {name:"Buy", n:buy, rate: cart>0 ? buy/cart : null},
+        ];
+
+        steps.forEach((s, idx)=>{
+          const d = document.createElement("div");
+          d.className = "fcol";
+          d.innerHTML = `
+            <div class="name">${s.name}</div>
+            <div class="num mono">${fmtInt(s.n)}</div>
+            <div class="sub">${idx===0 ? "—" : ("转化 " + (s.rate!=null ? fmtPct(s.rate) : "—"))}</div>
+          `;
+          el.appendChild(d);
+        });
+
+        const btn = byId("btnCopyJourney");
+        if(btn){
+          btn.onclick = ()=> copyText(JSON.stringify({behavior_counts:c, strict: state.strict}, null, 2));
+        }
+      }
+
+      function renderBizDiagnosis(lc, ov, advice){
+        const segs = safeArr(lc?.segments?.segments || lc?.segments || []);
+        const c = safeObj(ov.behavior_counts);
+        const pv = Number(c.pv||0), fav = Number(c.fav||0), cart = Number(c.cart||0), buy = Number(c.buy||0);
+
+        const drops = [
+          {name:"浏览→收藏", from:pv, to:fav, rate: pv>0 ? fav/pv : null, key:"pv_to_fav"},
+          {name:"收藏→加购", from:fav, to:cart, rate: fav>0 ? cart/fav : null, key:"fav_to_cart"},
+          {name:"加购→购买", from:cart, to:buy, rate: cart>0 ? buy/cart : null, key:"cart_to_buy"},
+        ].filter(x=>Number.isFinite(x.rate));
+
+        const worst = drops.length
+          ? [...drops].sort((a,b)=> (a.rate - b.rate) || (b.from - a.from))[0]
+          : null;
+
+        const topSeg = segs.length
+          ? [...segs].sort((a,b)=>(Number(b.users||0)-Number(a.users||0)))[0]
+          : null;
+
+        const lines = [];
+        lines.push(topSeg
+          ? `【主要人群】<b>${topSeg.segment_zh || topSeg.segment}</b>（${fmtInt(topSeg.users)}，占比 ${fmtPct(topSeg.share)}）`
+          : `【主要人群】—（暂无分群数据）`
+        );
+
+        if (worst){
+          lines.push(`【优先修的漏斗段】<b>${worst.name}</b>（转化 ${fmtPct(worst.rate)}）`);
+          if (worst.key === "pv_to_fav"){
+            lines.push("动作：补强卖点/对比点/可信背书（让用户愿意收藏）");
+            lines.push("动作：首屏信息密度优化（价格、核心利益点、评价/资质、售后承诺）");
+          } else if (worst.key === "fav_to_cart"){
+            lines.push("动作：权益一刀（券/包邮门槛/赠品/限时）让收藏转加购");
+            lines.push("动作：套装/组合购一键加购，减少选择成本");
+          } else {
+            lines.push("动作：加购召回（24h/48h）+ 售后承诺/风险兜底促下单");
+            lines.push("动作：临门一脚（加购专享券/凑单免邮/限时赠品）");
+          }
+        } else {
+          lines.push("【优先修的漏斗段】—（暂无漏斗计数）");
+        }
+
+        const adv = safeArr(safeObj(advice.journey));
+        if (adv.length){
+          lines.push(`【系统建议】${adv.slice(0,1).map(x=>`${x.title}：${x.detail}`).join("；")}`);
+        }
+
+        setList("bizDiagnosis", lines);
+
+        const btn = byId("btnCopyDiagnosis");
+        if(btn){
+          btn.onclick = ()=> copyText(JSON.stringify({strict: state.strict, lifecycle: segs, behavior_counts: c, worst_stage: worst?.key || null}, null, 2));
+        }
+      }
+
+      function renderTop(top){
+        const items = safeArr(top.items);
+        const body = byId("topBody");
+        const empty = byId("topEmpty");
+        if(!body || !empty) return;
+
+        body.innerHTML = "";
+        if(!items.length){
+          empty.style.display = "";
+          return;
+        }
+        empty.style.display = "none";
+
+        items.forEach(it=>{
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td class="mono" style="font-weight:800">${it.item_id ?? "—"}</td>
+            <td class="right mono">${fmtInt(it.pv)}</td>
+            <td class="right mono">${fmtInt(it.fav)}</td>
+            <td class="right mono">${fmtInt(it.cart)}</td>
+            <td class="right mono">${fmtInt(it.buy)}</td>
+            <td class="right rate mono">${fmtPct(it.pv_to_buy_rate)}</td>
+          `;
+          body.appendChild(tr);
+        });
+
+        const btn = byId("btnCopyTop");
+        if(btn) btn.onclick = ()=> copyText(JSON.stringify({strict: state.strict, top}, null, 2));
+      }
+
+      function renderOpp(opp){
+        const items = safeArr(opp.items);
+        const body = byId("oppBody");
+        const empty = byId("oppEmpty");
+        if(!body || !empty) return;
+
+        body.innerHTML = "";
+        if(!items.length){
+          empty.style.display = "";
+          return;
+        }
+        empty.style.display = "none";
+
+        items.forEach(it=>{
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td class="mono" style="font-weight:800">${it.item_id ?? "—"}</td>
+            <td class="right mono">${fmtInt(it.pv)}</td>
+            <td class="right mono">${fmtInt(it.buy)}</td>
+            <td class="right rate mono">${fmtPct(it.pv_to_buy_rate)}</td>
+          `;
+          body.appendChild(tr);
+        });
+
+        const btn = byId("btnCopyOpp");
+        if(btn) btn.onclick = ()=> copyText(JSON.stringify({strict: state.strict, opportunity: opp}, null, 2));
+      }
+
+      function renderKBPlan(top, opp){
+        const top1 = safeArr(top.items)[0];
+        const opp1 = safeArr(opp.items)[0];
+
+        const lines = [];
+        lines.push("<b>主推放大</b>：用 Top 款做成交（脚本/投放/套装）");
+        if (top1){
+          lines.push(`主推款：<span class="mono">${top1.item_id}</span>（PV→Buy ${fmtPct(top1.pv_to_buy_rate)}）`);
+          lines.push("动作：达人脚本（3秒卖点+对比点+可信背书）+ 前置评价/售后承诺");
+        } else {
+          lines.push("主推款：—（先生成特征/提高样本）");
+        }
+
+        lines.push("<b>机会点修漏斗</b>：高PV低买先修，再扩量");
+        if (opp1){
+          lines.push(`机会点：<span class="mono">${opp1.item_id}</span>（PV→Buy ${fmtPct(opp1.pv_to_buy_rate)}）`);
+          lines.push("动作：权益一刀（券/包邮/赠品/限时） + 降低决策阻力（规格/对比表/风险兜底）");
+        } else {
+          lines.push("机会点：—（需要 PV 高且转化低的候选）");
+        }
+
+        setList("kbActionPlan", lines);
+
+        const btn = byId("btnCopyKBPlan");
+        if(btn) btn.onclick = ()=> copyText(JSON.stringify({strict: state.strict, top: top1 || null, opportunity: opp1 || null}, null, 2));
+      }
+
+      function renderKBNext(top, opp){
+        const top1 = safeArr(top.items)[0];
+        const opp1 = safeArr(opp.items)[0];
+        const lines = [];
+
+        if (top1){
+          lines.push(`① 先推：<span class="mono">${top1.item_id}</span>（放大成交）`);
+        } else {
+          lines.push("① 先推：—");
+        }
+
+        if (opp1){
+          lines.push(`② 再修：<span class="mono">${opp1.item_id}</span>（修漏斗：卖点/信任/权益）`);
+        } else {
+          lines.push("② 再修：—");
+        }
+
+        lines.push(`③ 复盘：切 strict=${state.strict} 对比结果，确认“更真/更可运营”`);
+
+        setList("kbNext", lines);
+      }
+
+      // Tabs
+      document.querySelectorAll(".tab").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));
+          btn.classList.add("active");
+          const v = btn.dataset.view;
+          const vm = byId("viewMerchant");
+          const vk = byId("viewKB");
+          if(vm) vm.style.display = (v==="merchant") ? "" : "none";
+          if(vk) vk.style.display = (v==="kb") ? "" : "none";
+        });
+      });
+
+      // Strict toggle
+      const toggleBtn = byId("btnToggleStrict");
+      if(toggleBtn){
+        toggleBtn.onclick = ()=>{
+          state.strict = state.strict ? 0 : 1;
+          toggleBtn.textContent = state.strict ? "严格" : "宽松";
+          setText("kpiStrictHint", `strict=${state.strict}`);
+          fetchDashboard();
+        };
+      }
+
+      // Buttons
+      const btnRefresh = byId("btnRefresh");
+      const btnImport = byId("btnImport");
+      const btnDemo = byId("btnDemo");
+      if(btnRefresh) btnRefresh.onclick = ()=> fetchDashboard();
+      if(btnImport) btnImport.onclick = ()=> alert("导入数据：请先跑本地导入脚本/重建特征表（后续可接后端接口）。");
+      if(btnDemo) btnDemo.onclick = ()=> alert("演示数据：当前页面直接读 /merchant/dashboard。");
+
+      // First load
+      fetchDashboard();
+    </script>
+  </body>
+</html>

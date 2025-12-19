@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+
+data/duckdb/*.duckdb
+data/hf_cache/
+data/raw/
+*.csv
+
+.DS_Store
+.vscode/
+.idea/
